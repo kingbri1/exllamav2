@@ -122,28 +122,26 @@ class ExLlamaV2StreamingGenerator(ExLlamaV2BaseGenerator):
         self.heal_next_token = (token_healing and self.sequence_ids.shape[-1] >= 2)
 
 
-    def stream(self) -> Union[Tuple[str, bool, torch.Tensor],
-                              Tuple[str, bool, torch.Tensor, torch.Tensor],
-                              Tuple[str, bool, torch.Tensor, torch.Tensor, torch.Tensor],
-                              Tuple[str, bool, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]]:
+    def stream(self) -> Tuple[str, bool, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
 
         chunk, eos, chunk_token_ids, probs, ptokens, logits = self._stream()
-        ret = [chunk, eos, chunk_token_ids]
+        ret = [chunk, eos, chunk_token_ids, self.no_probs, self.no_ptokens, self.no_logits]
 
         if self.return_probabilities:
-            ret.append(probs)
+            ret[3] = probs
+
             if self.return_probabilities_k > 1:
-                ret.append(ptokens)
-        
+                ret[4] = ptokens
+
         if self.return_logits:
-            ret.append(logits)
-        
+            ret[5] = logits
+
         return tuple(ret)
 
 
     # Get the next chunk of text in the stream. Returns eos if stop condition has been met but does not count tokens
 
-    def _stream(self) -> (str, bool, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor):
+    def _stream(self) -> Tuple[str, bool, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
 
         # Token healing
 
