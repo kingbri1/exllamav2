@@ -226,10 +226,12 @@ jobs:
 
       - name: Install CUDA build Dependencies
         if: matrix.cuda != ''
+        id: cuda_deps
         run: |
           git config --system core.longpaths true
           $cudaVersion = '${{ matrix.cuda }}'
           $cudaVersionPytorch = '${{ matrix.cuda }}'.Remove('${{ matrix.cuda }}'.LastIndexOf('.')).Replace('.','')
+          Write-Output "CUDA_VERSION_PYTORCH=$cudaVersionPytorch" >> "$env:GITHUB_OUTPUT"
           $pytorchIndexUrl = "https://download.pytorch.org/whl/cu$cudaVersionPytorch"
 
           uv pip install torch==${{ matrix.torch }} --extra-index-url $pytorchIndexUrl
@@ -239,7 +241,7 @@ jobs:
         if: matrix.cuda != ''
         run: |
           # --- Build wheel
-          $BUILDTAG = "+cu$cudaVersionPytorch-torch${{ matrix.torch }}"
+          $BUILDTAG = "+cu${{ steps.cuda_deps.outputs.CUDA_VERSION_PYTORCH }}-torch${{ matrix.torch }}"
           $env:BUILD_TARGET = "cuda"
           $env:TORCH_CUDA_ARCH_LIST = '${{ matrix.cudaarch }}'
           python -m build -n --wheel -C--build-option=egg_info "-C--build-option=--tag-build=$BUILDTAG"
